@@ -15,30 +15,46 @@ type ClickEvent struct {
 	Metadata  map[string]string `json:"metadata"`
 }
 
-func handleIngest(w http.ResponseWriter, r *http.Request) {
-	// Security check: Only allow POST requests
+
+type Server struct {
+	Queue chan ClickEvent
+}
+
+
+func (s *Server) worker() {
+	for event := range s.Queue {
+		fmt.Printf("👷 Worker pulled event %s from the queue\n", event.EventID)
+	}
+}
+
+
+func (s *Server) handleIngest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	var event ClickEvent
-
-	err := json.NewDecoder(r.Body).Decode(&event)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		http.Error(w, "Bad request: Invalid JSON", http.StatusBadRequest)
 		return
 	}
+	//handing the event to the channel
+	s.Queue <- event
 
-	fmt.Printf("Received Event! ID: %s | User: %s | Type: %s\n", 
-		event.EventID, event.UserID, event.EventType)
-
-	w.WriteHeader(http.StatusAccepted) // HTTP 202
+	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte(`{"status": "accepted"}`))
 }
 
 func main() {
-	http.HandleFunc("/ingest", handleIngest)
+	
+	srv := &Server{
+		Queue: make(chan ClickEvent, 1000),
+	}
+
+	go srv.worker()
+
+	http.HandleFunc("/ingest", srv.handleIngest)
 
 	fmt.Println("Ingestor server starting on :8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
