@@ -19,6 +19,7 @@ func (s *Server) HandleIngest(w http.ResponseWriter, r *http.Request) {
 
 	select {
 	case s.Queue <- event:
+		s.Metrics.Ingested.Add(1)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte(`{"status": "accepted"}`))
 	default:

@@ -28,6 +28,7 @@ func main() {
 	// Set up the explicit HTTP Router
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ingest", srv.HandleIngest)
+	mux.HandleFunc("/metrics", srv.HandleMetrics)
 
 	httpServer := &http.Server{
 		Addr:    ":8080",

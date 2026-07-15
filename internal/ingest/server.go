@@ -7,6 +7,7 @@ type Server struct {
 	DLQ   chan ClickEvent
 	Wg    *sync.WaitGroup
 	DlqWg *sync.WaitGroup 
+	Metrics Metrics
 }
 
 func NewServer(wg *sync.WaitGroup, dlqWg *sync.WaitGroup, queueSize int) *Server {

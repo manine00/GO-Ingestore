@@ -23,6 +23,7 @@ func (s *Server) StartJanitor() {
 			// Janitor logs the structurally invalid event
 			errorMsg := fmt.Sprintf("FAILED EVENT - Missing Data: %+v\n", event)
 			file.WriteString(errorMsg)
+			s.Metrics.Failed.Add(1)
 			fmt.Printf("Janitor routed invalid event to log file\n")
 		}
 		fmt.Println("Janitor cleaned up and stopped")
@@ -50,6 +51,7 @@ func (s *Server) worker(id int) {
 			continue
 		}
 
+		s.Metrics.Processed.Add(1)
 		fmt.Printf("Worker %d successfully processed event: %s\n", id, event.EventID)
 	}
 	fmt.Printf("Worker %d stopped\n", id)
