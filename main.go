@@ -16,12 +16,14 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
+	var dlqWg sync.WaitGroup
 
 	// Initialize our domain server
-	srv := ingest.NewServer(&wg, 1000)
+	srv := ingest.NewServer(&wg, &dlqWg, 1000)
 
 	// Start the background worker pool
 	srv.StartWorkers(3)
+	srv.StartJanitor()
 
 	// Set up the explicit HTTP Router
 	mux := http.NewServeMux()
@@ -57,9 +59,12 @@ func main() {
 
 	// Close queue to drain workers
 	close(srv.Queue)
-
 	fmt.Println("Draining remaining events in queue. Waiting for workers...")
 	wg.Wait()
+
+	close(srv.DLQ)
+	fmt.Println("Waiting for Janitor to save final failed events...")
+	dlqWg.Wait()
 
 	fmt.Println("Graceful shutdown complete. Zero data loss.")
 }
